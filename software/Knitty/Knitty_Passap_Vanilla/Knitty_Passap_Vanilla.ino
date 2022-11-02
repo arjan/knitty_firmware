@@ -19,9 +19,11 @@
 
 //front carriage
 #define PIN_CSENSE  2         // Yellow
-#define PIN_CREF    4         // White
+#define PIN_CREF    3         // White
 #define PIN_NEEDLE_RTL 5      // Blue,  Pattern RTL
 #define PIN_NEEDLE_LTR 6      // ,  Pattern LTR
+
+#define PIN_LED 13
 
 #define DIRECTION_UNKNOWN       0
 #define DIRECTION_LEFT_RIGHT   -1
@@ -34,14 +36,14 @@ signed int currentCursorPosition = 0;
 unsigned long lastCursorChange = 0;
 unsigned int currentPatternIndex = 0;
 signed int firstNeedle = 0;
-signed int offsetCarriage_RTL = 53;
-signed int offsetCarriage_LTR = 29;
+signed int offsetCarriage_RTL = 31;
+signed int offsetCarriage_LTR = 31 + 24;
 
 int knitPattern[255] = {0};
 
 int passapCalibrateArray[8] = {0};
 signed int  passapCalibratePointer = 0;
-static unsigned char passaptestpattern[8] = {  1, 0, 1, 1, 0, 0, 0, 1};
+static unsigned char passaptestpattern[8] = {  1, 0, 1, 1, 1, 0, 0, 1};
 
 char currentPinChangeValue = 0;
 char currentPinChangeOppositeValue = 0;
@@ -78,11 +80,15 @@ unsigned char parserState = COM_PARSE_CMD;
 unsigned char parserReceivedCommand = 0;
 String parserReceivedPayload = "";
 unsigned char patternLength = 0;
+unsigned char patternAllowed = 0;
 
 void setup() {
   Serial.begin(115200);
   sendCommand(COM_CMD_RESPONSE, "up and running");
 
+  // Status led
+  pinMode(PIN_LED, OUTPUT);
+  
   // Setup PHOTO SENSOR pin change interrupt
   pinMode(PIN_CSENSE, INPUT_PULLUP);
   pinMode(PIN_CREF,  INPUT_PULLUP);
@@ -224,7 +230,7 @@ void patternFront() {
     if (currentDirection == DIRECTION_RIGHT_LEFT) {
       int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
       //set needles in absolute position
-      if (patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2) {
+      if (patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2 && patternAllowed) {
         setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
       }
       else {
@@ -240,7 +246,7 @@ void patternFront() {
     if (currentDirection == DIRECTION_LEFT_RIGHT) {
 
       int patternPositionLTR = currentCursorPosition  - (firstNeedle + offsetCarriage_LTR);
-      if (patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2) {
+      if (patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2 && patternAllowed) {
         setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
       }
       else {
@@ -269,9 +275,11 @@ void interruptPinChangeEncoder() {
   currentPinChangeValue = digitalRead(PIN_CSENSE);
   currentPinChangeOppositeValue = digitalRead(PIN_CREF);
 
-  //    Serial.print(String(0+currentPinChangeValue));
-  //    Serial.print("-");
-  //    Serial.println(String(0+currentPinChangeOppositeValue));
+//      Serial.print(String(0+currentPinChangeValue));
+//      Serial.print("-");
+//      Serial.println(String(0+currentPinChangeOppositeValue));
+
+patternAllowed = currentPinChangeValue == 0;
 
   // Determine direction
   if (currentPinChangeValue == currentPinChangeOppositeValue) {
@@ -281,8 +289,10 @@ void interruptPinChangeEncoder() {
     currentDirection = DIRECTION_RIGHT_LEFT;
   }
 
-  // RTL = 1, LTR = -1
-  currentCursorPosition += currentDirection;
+  //Serial.println(String(0 + currentDirection) + " " + String(0 + currentCursorPosition));
+
+  // RTL = -1, LTR = 1
+  currentCursorPosition -= currentDirection;
 
 
   //AutoCalibrate
@@ -331,6 +341,7 @@ void interruptPinChangeEncoder() {
 
   // Serial.println("end");
   if (found) {
+    digitalWrite(PIN_LED, HIGH);
     sendCommand(COM_CMD_RESPONSE, "fc");
     //calibrate
     currentCursorPosition = -2;
