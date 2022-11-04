@@ -37,7 +37,7 @@ unsigned long lastCursorChange = 0;
 unsigned int currentPatternIndex = 0;
 signed int firstNeedle = 0;
 signed int offsetCarriage_RTL = 31;
-signed int offsetCarriage_LTR = 31 + 24;
+signed int offsetCarriage_LTR = 31 + 23;
 
 int knitPattern[255] = {0};
 
@@ -192,7 +192,7 @@ void parserSerialStream() {
         executeCommand(parserReceivedCommand, parserReceivedPayload);
         parserState = COM_PARSE_CMD;
 
-        ////sendCommand(COM_CMD_RESPONSE, "Received");
+        sendCommand(COM_CMD_RESPONSE, "Received");
         break;
       }
 
@@ -225,6 +225,7 @@ void patternFront() {
 
   // react only if there is new cursorposition
   if (currentCursorPositionLast != currentCursorPosition) {
+        sendCommand(COM_CMD_CURSOR, String(0 + currentCursorPosition));
 
     //RTL
     if (currentDirection == DIRECTION_RIGHT_LEFT) {
@@ -279,14 +280,15 @@ void interruptPinChangeEncoder() {
 //      Serial.print("-");
 //      Serial.println(String(0+currentPinChangeOppositeValue));
 
-patternAllowed = currentPinChangeValue == 0;
 
   // Determine direction
   if (currentPinChangeValue == currentPinChangeOppositeValue) {
     currentDirection = DIRECTION_LEFT_RIGHT;
+patternAllowed = currentPinChangeValue == 1;
   }
   else {
     currentDirection = DIRECTION_RIGHT_LEFT;
+patternAllowed = currentPinChangeValue == 0;
   }
 
   //Serial.println(String(0 + currentDirection) + " " + String(0 + currentCursorPosition));
