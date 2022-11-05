@@ -1,5 +1,3 @@
-
-
 //////////////////////////////////////////////////////////////////////////////
 // Knitty Project
 // Arduino Firmware for Passap E6000
@@ -88,7 +86,7 @@ void setup() {
 
   // Status led
   pinMode(PIN_LED, OUTPUT);
-  
+
   // Setup PHOTO SENSOR pin change interrupt
   pinMode(PIN_CSENSE, INPUT_PULLUP);
   pinMode(PIN_CREF,  INPUT_PULLUP);
@@ -225,7 +223,7 @@ void patternFront() {
 
   // react only if there is new cursorposition
   if (currentCursorPositionLast != currentCursorPosition) {
-        sendCommand(COM_CMD_CURSOR, String(0 + currentCursorPosition));
+    sendCommand(COM_CMD_CURSOR, String(0 + currentCursorPosition));
 
     //RTL
     if (currentDirection == DIRECTION_RIGHT_LEFT) {
@@ -284,11 +282,11 @@ void interruptPinChangeEncoder() {
   // Determine direction
   if (currentPinChangeValue == currentPinChangeOppositeValue) {
     currentDirection = DIRECTION_LEFT_RIGHT;
-patternAllowed = currentPinChangeValue == 1;
+    patternAllowed = currentPinChangeValue == 1;
   }
   else {
     currentDirection = DIRECTION_RIGHT_LEFT;
-patternAllowed = currentPinChangeValue == 0;
+    patternAllowed = currentPinChangeValue == 0;
   }
 
   //Serial.println(String(0 + currentDirection) + " " + String(0 + currentCursorPosition));
@@ -296,34 +294,14 @@ patternAllowed = currentPinChangeValue == 0;
   // RTL = -1, LTR = 1
   currentCursorPosition -= currentDirection;
 
-
   //AutoCalibrate
   passapCalibrateArray[passapCalibratePointer & 0x07] = currentPinChangeValue;
   passapCalibrateArray[(passapCalibratePointer + 1) & 0x07] = currentPinChangeOppositeValue;
-  /*
-  // uncomment for finding the calibration sequence -> store in 'passaptestpattern'
-    for (int i = 0; i < 8; i++) {
 
-      if ((passapCalibratePointer - i) >= -1) {
-
-        Serial.print(passapCalibrateArray[(passapCalibratePointer - i+1)]);
-
-      }
-      else {
-
-       Serial.print(passapCalibrateArray[(passapCalibratePointer - i+9)]);
-
-      }
-    }
-  Serial.println("");
-  */
-  //
+  // finding the calibration sequence -> store in 'passaptestpattern'
   int found = 1;
   for (int i = 0; i < 8; i++) {
-
     if ((passapCalibratePointer - i) >= -1) {
-
-      // Serial.print((passapCalibratePointer - i+1));
       if (passapCalibrateArray[(passapCalibratePointer - i + 1) & 0x07] !=
           passaptestpattern[i]) {
         found = 0;
@@ -331,8 +309,6 @@ patternAllowed = currentPinChangeValue == 0;
       }
     }
     else {
-
-      //  Serial.print((passapCalibratePointer - i + 9));
       if (passapCalibrateArray[(passapCalibratePointer - i + 9) & 0x07] !=
           passaptestpattern[i]) {
         found = 0;
