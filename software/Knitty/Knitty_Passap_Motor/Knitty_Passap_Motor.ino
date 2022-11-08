@@ -118,7 +118,7 @@ void loop() {
           sendCommand(COM_CMD_MOTOR, "0");
           motorOn = 0;
           digitalWrite(PIN_MOTOR, LOW);
-          sendCommand(COM_CMD_RESPONSE, "Motor auto shutdown");
+          sendCommand(COM_CMD_RESPONSE, "Motor auto shutdown, carriage not moving");
       }
   }
 }
