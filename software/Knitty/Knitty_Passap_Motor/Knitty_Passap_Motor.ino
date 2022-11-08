@@ -33,7 +33,7 @@ char currentDirection = DIRECTION_UNKNOWN;
 char lastDirection = DIRECTION_UNKNOWN;
 
 signed int currentCursorPosition = 0;
-unsigned long lastCursorChange = 0;
+volatile unsigned long lastCursorChange = 0;
 unsigned int currentPatternIndex = 0;
 signed int firstNeedle = 0;
 signed int offsetCarriage_RTL = 31;
@@ -81,7 +81,6 @@ String parserReceivedPayload = "";
 unsigned char patternLength = 0;
 unsigned char patternAllowed = 0;
 
-unsigned long lastPositionUpdate = 0;
 unsigned char motorOn = 0;
 
 #define MOTOR_MAX_STALL 2000000 // milliseconds
@@ -114,11 +113,12 @@ void loop() {
 
   if (motorOn) {
       unsigned long now = micros();
-      if ((now - lastPositionUpdate) > MOTOR_MAX_STALL) {
+      unsigned long delta = (now - lastCursorChange);
+      if (delta > MOTOR_MAX_STALL && delta < 2 * MOTOR_MAX_STALL) {
           sendCommand(COM_CMD_MOTOR, "0");
           motorOn = 0;
           digitalWrite(PIN_MOTOR, LOW);
-          sendCommand(COM_CMD_RESPONSE, "Motor auto shutdown, carriage not moving");
+          sendCommand(COM_CMD_RESPONSE, "Motor auto shutdown, carriage not moving?");
       }
   }
 }
@@ -157,8 +157,8 @@ void executeCommand(unsigned char cmd, String payload) {
       break;
 
     case COM_CMD_MOTOR:
+      lastCursorChange = micros();
       motorOn = payload.toInt() == 1;
-      lastPositionUpdate = micros();
       digitalWrite(PIN_MOTOR, motorOn);
       sendCommand(COM_CMD_MOTOR, payload);
       break;
@@ -285,7 +285,6 @@ void patternFront() {
 void interruptPinChangeEncoder() {
 
   unsigned long now = micros();
-  lastPositionUpdate = now;
 
   if (now - lastCursorChange < 1000) {
     lastCursorChange = now;
