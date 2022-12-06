@@ -50,7 +50,6 @@ String parserReceivedPayload = "";
 // pattern
 
 unsigned char patternLength = 0;
-unsigned char patternAllowed = 1;
 
 unsigned int currentPatternIndex = 0;
 signed int firstNeedle = 0;
@@ -78,9 +77,10 @@ void setup() {
 
 }
 
+
+
 void loop() {
     parserSerialStream();
-    patternFront();
 }
 
 
@@ -197,45 +197,36 @@ void setNeedle_LTR(char state) {
 }
 
 void patternFront() {
-
-    // react only if there is new cursorposition
-    if (currentCursorPositionLast != currentCursorPosition) {
-        sendCommand(COM_CMD_CURSOR, String(0 + currentCursorPosition));
-
-        //RTL
-        if (currentDirection == DIRECTION_RIGHT_LEFT) {
-            int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
-            //set needles in absolute position
-            if (patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2 && patternAllowed) {
-                setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
-            }
-            else {
-                setNeedle_RTL(1);
-            }
-            //send pattern End
-            if (patternPositionRTL == patternLength * 2 + 1 ) {
-                sendCommand(COM_CMD_PATTERN_END, "1");
-            }
+    //RTL
+    if (currentDirection == DIRECTION_RIGHT_LEFT) {
+        int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
+        //set needles in absolute position
+        if (patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2) {
+            setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
         }
-
-        //LTR
-        if (currentDirection == DIRECTION_LEFT_RIGHT) {
-
-            int patternPositionLTR = currentCursorPosition  - (firstNeedle + offsetCarriage_LTR);
-            if (patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2 && patternAllowed) {
-                setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
-            }
-            else {
-                setNeedle_LTR(1);
-            }
-            //send pattern End
-            if (patternPositionLTR == 0) {
-                sendCommand(COM_CMD_PATTERN_END, "1");
-            }
+        else {
+            setNeedle_RTL(1);
         }
+        //send pattern End
+        if (patternPositionRTL == patternLength * 2 + 2 ) {
+            sendCommand(COM_CMD_PATTERN_END, "1");
+        }
+    }
 
-        //store last CursorPosition
-        currentCursorPositionLast = currentCursorPosition;
+    //LTR
+    if (currentDirection == DIRECTION_LEFT_RIGHT) {
+
+        int patternPositionLTR = currentCursorPosition  - (firstNeedle + offsetCarriage_LTR);
+        if (patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2) {
+            setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
+        }
+        else {
+            setNeedle_LTR(1);
+        }
+        //send pattern End
+        if (patternPositionLTR == 0) {
+            sendCommand(COM_CMD_PATTERN_END, "1");
+        }
     }
 }
 
@@ -246,7 +237,7 @@ void interruptPinChangeEncoder() {
     unsigned long now = micros();
 
     if (now - lastCursorChange < 1000) {
-        lastCursorChange = now;
+//        lastCursorChange = now;
         return;
     }
 
@@ -257,26 +248,38 @@ void interruptPinChangeEncoder() {
         return;
     }
 
-    if (now - lastCursorChange >= 0) {
+    if (now - lastCursorChange >= 100) {
         char direction;
         if (CSENSE == CREF) {
             direction = DIRECTION_LEFT_RIGHT;
-            patternAllowed = CREF == 1;
         } else {
             direction = DIRECTION_RIGHT_LEFT;
-            patternAllowed = CREF == 0;
         }
         if (direction != currentDirection) {
             currentDirection = direction;
             Serial.print("D:");
-            Serial.println(String(currentDirection));
+            Serial.println(String(0+currentDirection));
         }
     }
 
 //    if (CREF) {
     currentCursorPosition -= currentDirection;
-    //Serial.print("C:");
-    //Serial.println(String(currentCursorPosition));
+
+    /* if (currentDirection == DIRECTION_RIGHT_LEFT) { */
+    /*     setNeedle_RTL(0); */
+    /*     setNeedle_LTR(1); */
+    /* } */
+    /* else { */
+    /*     setNeedle_RTL(1); */
+    /*     setNeedle_LTR(1); */
+    /* } */
+
+    if (CSENSE) {
+    patternFront();
+    }
+//        setNeedle_RTL(1);
+//        setNeedle_LTR(1);
+
 //    }
 
     lastCSENSE = CSENSE;
@@ -328,8 +331,8 @@ void autoCalibrate(char CSENSE, char CREF) {
     if (found) {
         currentCursorPosition = 0;
         sendCommand(COM_CMD_RESPONSE, "fc");
-        Serial.print("C:");
-        Serial.println(String(currentCursorPosition));
+//        Serial.print("C:");
+//        Serial.println(String(currentCursorPosition));
     }
 
     passapCalibratePointer = passapCalibratePointer + 2;
