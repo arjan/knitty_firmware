@@ -261,30 +261,20 @@ void interruptPinChangeEncoder() {
             Serial.println(String(0+currentDirection));
         }
     }
-
-//    if (CREF) {
+    lastCursorChange = now;
     currentCursorPosition -= currentDirection;
 
-    /* if (currentDirection == DIRECTION_RIGHT_LEFT) { */
-    /*     setNeedle_RTL(0); */
-    /*     setNeedle_LTR(1); */
-    /* } */
-    /* else { */
-    /*     setNeedle_RTL(1); */
-    /*     setNeedle_LTR(1); */
-    /* } */
-
-    if (CSENSE) {
-    patternFront();
+    if (CREF && currentDirection == DIRECTION_RIGHT_LEFT) {
+        patternFront();
+    } else if (CSENSE && currentDirection == DIRECTION_LEFT_RIGHT) {
+        patternFront();
+    } else {
+        setNeedle_RTL(1);
+        setNeedle_LTR(1);
     }
-//        setNeedle_RTL(1);
-//        setNeedle_LTR(1);
-
-//    }
 
     lastCSENSE = CSENSE;
     lastCREF = CREF;
-    lastCursorChange = now;
 
 #ifdef DEBUG_CSENSE
     Serial.print("S:");
