@@ -81,6 +81,16 @@ void setup() {
 
 void loop() {
     parserSerialStream();
+    reportPosition();
+}
+
+unsigned int lastReportedCursor;
+
+void reportPosition() {
+    if (lastReportedCursor != currentCursorPosition) {
+        sendCommand(COM_CMD_CURSOR, String(0 + currentCursorPosition));
+        lastReportedCursor = currentCursorPosition;
+    }
 }
 
 
@@ -208,7 +218,7 @@ void patternFront(int knit) {
             setNeedle_RTL(1);
         }
         //send pattern End
-        if (patternPositionRTL == patternLength * 2 + 2 ) {
+        if (patternPositionRTL == 0) { //patternLength * 2 + 1 ) {
             sendCommand(COM_CMD_PATTERN_END, "1");
         }
     }
@@ -223,7 +233,8 @@ void patternFront(int knit) {
             setNeedle_LTR(1);
         }
         //send pattern End
-        if (patternPositionLTR == 0) {
+        if (patternPositionLTR == patternLength * 2 + 1 ) {
+            //if (patternPositionLTR == 0) {
             sendCommand(COM_CMD_PATTERN_END, "1");
         }
     }
@@ -256,8 +267,8 @@ void interruptPinChangeEncoder() {
         }
         if (direction != currentDirection) {
             currentDirection = direction;
-            //Serial.print("D:");
-            //Serial.println(String(0+currentDirection));
+            Serial.print("----D:");
+            Serial.println(String(0+currentDirection));
         }
     }
     lastCursorChange = now;
