@@ -1,8 +1,8 @@
 // analyze
-// #define DEBUG_CSENSE
+//#define DEBUG_CSENSE
 
-#define PIN_CSENSE  2         // Yellow
-#define PIN_CREF    3         // White
+#define PIN_CSENSE  3         // Yellow
+#define PIN_CREF    2         // White
 #define PIN_NEEDLE_RTL 5      // Blue,  Pattern RTL
 #define PIN_NEEDLE_LTR 6      // ,  Pattern LTR
 
@@ -67,6 +67,7 @@ void setup() {
     pinMode(PIN_CREF,  INPUT_PULLUP);
 
     attachInterrupt(digitalPinToInterrupt(PIN_CSENSE), interruptPinChangeEncoder, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(PIN_CREF), interruptCalibrate, CHANGE);
 
 
     // Setup Needles
@@ -212,13 +213,14 @@ void patternFront(int knit) {
         int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
         //set needles in absolute position
         if (knit && patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2) {
+            Serial.println("PP:" + String(patternPositionRTL) + " " + String(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]));
             setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
         }
         else {
             setNeedle_RTL(1);
         }
         //send pattern End
-        if (patternPositionRTL == 0) { //patternLength * 2 + 1 ) {
+        if (patternPositionRTL == patternLength * 2 + 1 ) {
             sendCommand(COM_CMD_PATTERN_END, "1");
         }
     }
@@ -233,7 +235,7 @@ void patternFront(int knit) {
             setNeedle_LTR(1);
         }
         //send pattern End
-        if (patternPositionLTR == patternLength * 2 + 1 ) {
+        if (patternPositionLTR == 0) {
             //if (patternPositionLTR == 0) {
             sendCommand(COM_CMD_PATTERN_END, "1");
         }
@@ -242,6 +244,34 @@ void patternFront(int knit) {
 
 
 /// interrupt
+char clastCSENSE = 0;
+char clastCREF = 0;
+
+void interruptCalibrate() {
+    unsigned long now = micros();
+
+    char CSENSE = digitalRead(PIN_CSENSE);
+    char CREF = digitalRead(PIN_CREF);
+
+    if (CSENSE == clastCSENSE && CREF == clastCREF) {
+        return;
+    }
+
+    clastCREF = CREF;
+    clastCSENSE = CSENSE;
+
+#ifdef DEBUG_CSENSE
+    Serial.print("S:");
+    Serial.print(String(now));
+    Serial.print(" ");
+    Serial.print(String(CSENSE!=0));
+    Serial.print(" ");
+    Serial.print(String(CREF!=0));
+    Serial.println("");
+#endif
+
+    autoCalibrate(CSENSE, CREF);
+}
 
 void interruptPinChangeEncoder() {
     unsigned long now = micros();
@@ -258,7 +288,7 @@ void interruptPinChangeEncoder() {
         return;
     }
 
-    if (now - lastCursorChange >= 100) {
+    if (now - lastCursorChange >= 15000) {
         char direction;
         if (CSENSE == CREF) {
             direction = DIRECTION_LEFT_RIGHT;
@@ -267,42 +297,41 @@ void interruptPinChangeEncoder() {
         }
         if (direction != currentDirection) {
             currentDirection = direction;
-            Serial.print("----D:");
-            Serial.println(String(0+currentDirection));
+            if (direction == DIRECTION_RIGHT_LEFT) {
+                Serial.println("---- DIRECTION_RIGHT_LEFT   <<<----");
+            } else {
+                Serial.println("---- DIRECTION_LEFT_RIGHT   ---->>>");
+            }
         }
     }
     lastCursorChange = now;
-    currentCursorPosition -= currentDirection;
+    currentCursorPosition += currentDirection;
+
+    if (currentDirection == DIRECTION_LEFT_RIGHT) {
+        setNeedle_RTL(1);
+        setNeedle_LTR(0);
+    } else {
+        setNeedle_RTL(0);
+        setNeedle_LTR(1);
+    }
 
     if (CREF && currentDirection == DIRECTION_RIGHT_LEFT) {
-        patternFront(1);
+//        patternFront(1);
     } else if (CSENSE && currentDirection == DIRECTION_LEFT_RIGHT) {
-        patternFront(1);
+//        patternFront(1);
     } else {
-        patternFront(0);
+//        patternFront(0);
         //setNeedle_RTL(1);
         //setNeedle_LTR(1);
     }
 
     lastCSENSE = CSENSE;
     lastCREF = CREF;
-
-#ifdef DEBUG_CSENSE
-    Serial.print("S:");
-    Serial.print(String(now));
-    Serial.print(" ");
-    Serial.print(String(CSENSE!=0));
-    Serial.print(" ");
-    Serial.print(String(CREF!=0));
-    Serial.println("");
-#endif
-
-    autoCalibrate(CSENSE, CREF);
 }
 
 int passapCalibrateArray[8] = {0};
 signed int  passapCalibratePointer = 0;
-static unsigned char passaptestpattern[8] = {  1, 0, 1, 1, 1, 0, 0, 1};
+static unsigned char passaptestpattern[8] = {  1, 1, 0, 1, 1, 1, 0, 1};
 
 void autoCalibrate(char CSENSE, char CREF) {
     //AutoCalibrate
