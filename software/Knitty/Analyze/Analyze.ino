@@ -53,8 +53,8 @@ unsigned char patternLength = 0;
 
 unsigned int currentPatternIndex = 0;
 signed int firstNeedle = 0;
-signed int offsetCarriage_RTL = 33;
-signed int offsetCarriage_LTR = 33 + 22;
+signed int offsetCarriage_RTL = 32 + 23;
+signed int offsetCarriage_LTR = 32;
 
 int knitPattern[255] = {0};
 
@@ -82,7 +82,7 @@ void setup() {
 
 void loop() {
     parserSerialStream();
-    reportPosition();
+    // reportPosition();
 }
 
 unsigned int lastReportedCursor;
@@ -210,14 +210,16 @@ void setNeedle_LTR(char state) {
 void patternFront(int knit) {
     //RTL
     if (currentDirection == DIRECTION_RIGHT_LEFT) {
+        setNeedle_RTL(1);
+
         int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
         //set needles in absolute position
         if (knit && patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2) {
             Serial.println("PP:" + String(patternPositionRTL) + " " + String(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]));
-            setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
+            setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
         }
         else {
-            setNeedle_RTL(1);
+            setNeedle_LTR(1);
         }
         //send pattern End
         if (patternPositionRTL == patternLength * 2 + 1 ) {
@@ -227,12 +229,15 @@ void patternFront(int knit) {
 
     //LTR
     if (currentDirection == DIRECTION_LEFT_RIGHT) {
+        setNeedle_LTR(1);
+
         int patternPositionLTR = currentCursorPosition  - (firstNeedle + offsetCarriage_LTR);
         if (knit && patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2) {
-            setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
+            Serial.println("XX:" + String(patternPositionLTR) + " " + knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
+            setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
         }
         else {
-            setNeedle_LTR(1);
+            setNeedle_RTL(1);
         }
         //send pattern End
         if (patternPositionLTR == 0) {
@@ -297,6 +302,9 @@ void interruptPinChangeEncoder() {
         }
         if (direction != currentDirection) {
             currentDirection = direction;
+            setNeedle_RTL(1);
+            setNeedle_LTR(1);
+
             if (direction == DIRECTION_RIGHT_LEFT) {
                 Serial.println("---- DIRECTION_RIGHT_LEFT   <<<----");
             } else {
@@ -315,14 +323,10 @@ void interruptPinChangeEncoder() {
         setNeedle_LTR(1);
     }
 
-    if (CREF && currentDirection == DIRECTION_RIGHT_LEFT) {
-//        patternFront(1);
-    } else if (CSENSE && currentDirection == DIRECTION_LEFT_RIGHT) {
-//        patternFront(1);
-    } else {
-//        patternFront(0);
-        //setNeedle_RTL(1);
-        //setNeedle_LTR(1);
+    if (currentDirection == DIRECTION_RIGHT_LEFT) {
+        patternFront(currentDirection % 2);
+    } else if (currentDirection == DIRECTION_LEFT_RIGHT) {
+        patternFront(1);
     }
 
     lastCSENSE = CSENSE;
