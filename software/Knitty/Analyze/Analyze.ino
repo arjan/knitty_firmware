@@ -215,7 +215,6 @@ void patternFront(int knit) {
         int patternPositionRTL = currentCursorPosition  - (firstNeedle + offsetCarriage_RTL);
         //set needles in absolute position
         if (knit && patternPositionRTL > 0 && patternPositionRTL <= patternLength * 2) {
-            Serial.println("PP:" + String(patternPositionRTL) + " " + String(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]));
             setNeedle_LTR(knitPattern[((patternLength * 2 - patternPositionRTL) / 2)]);
         }
         else {
@@ -233,7 +232,6 @@ void patternFront(int knit) {
 
         int patternPositionLTR = currentCursorPosition  - (firstNeedle + offsetCarriage_LTR);
         if (knit && patternPositionLTR > 0 && patternPositionLTR <= patternLength * 2) {
-            Serial.println("XX:" + String(patternPositionLTR) + " " + knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
             setNeedle_RTL(knitPattern[((patternLength * 2 - patternPositionLTR) / 2)]);
         }
         else {
@@ -315,18 +313,18 @@ void interruptPinChangeEncoder() {
     lastCursorChange = now;
     currentCursorPosition += currentDirection;
 
-    if (currentDirection == DIRECTION_LEFT_RIGHT) {
-        setNeedle_RTL(1);
-        setNeedle_LTR(0);
-    } else {
-        setNeedle_RTL(0);
-        setNeedle_LTR(1);
-    }
+    /* if (currentDirection == DIRECTION_LEFT_RIGHT) { */
+    /*     setNeedle_RTL(1); */
+    /*     setNeedle_LTR(0); */
+    /* } else { */
+    /*     setNeedle_RTL(0); */
+    /*     setNeedle_LTR(1); */
+    /* } */
 
     if (currentDirection == DIRECTION_RIGHT_LEFT) {
-        patternFront(currentDirection % 2);
+        patternFront(currentCursorPosition % 2);
     } else if (currentDirection == DIRECTION_LEFT_RIGHT) {
-        patternFront(1);
+        patternFront((1+currentCursorPosition) % 2);
     }
 
     lastCSENSE = CSENSE;
