@@ -11,6 +11,7 @@ void setup() {
     pinMode(PIN_NEEDLE_RTL, OUTPUT);
 
     pinMode(PIN_A, INPUT_PULLUP);
+    pinMode(PIN_B, INPUT_PULLUP);
 
     attachInterrupt(digitalPinToInterrupt(PIN_A), interruptA, CHANGE);
     attachInterrupt(digitalPinToInterrupt(PIN_B), interruptB, CHANGE);
@@ -48,48 +49,46 @@ void interruptA() {
 
     if (pinB != pinA) {
         currentCursorPosition++;
-        direction = LTR;
+        direction = RTL;
     } else {
         currentCursorPosition--;
-        direction = RTL;
+        direction = LTR;
     }
     Serial.print("Position: ");
     Serial.println(currentCursorPosition);
 
 //    autoCalibrate(pinA, pinB);
-}
 
-void interruptB() {
 //    pinB = digitalRead(PIN_B);
 
-    int needle;
-
     if (direction == RTL) {
-        needle = currentCursorPosition / 2;
+        int needle = currentCursorPosition / 2;
 
         digitalWrite(PIN_NEEDLE_RTL, 1);
         digitalWrite(PIN_NEEDLE_LTR, 1);
 //        return;
+
+        if (pinB == LOW) return;
+
+        if (needle >= 30 && needle <= 50) {
+            digitalWrite(PIN_NEEDLE_LTR, (needle / 3) % 2);
+        }
+    } else {
+        int needle = (currentCursorPosition + 25) / 2;
+
+        digitalWrite(PIN_NEEDLE_RTL, 1);
+        digitalWrite(PIN_NEEDLE_LTR, 1);
 
         if (pinB == HIGH) return;
 
         if (needle >= 30 && needle <= 50) {
             digitalWrite(PIN_NEEDLE_RTL, (needle / 3) % 2);
         }
-
-    } else {
-        needle = (currentCursorPosition - 21) / 2;
-
-        digitalWrite(PIN_NEEDLE_RTL, 1);
-        digitalWrite(PIN_NEEDLE_LTR, 1);
-
-        if (needle >= 30 && needle <= 50) {
-            digitalWrite(PIN_NEEDLE_LTR, (needle / 3) % 2);
-        }
     }
 }
 
-
+void interruptB() {
+}
 
 ///
 
