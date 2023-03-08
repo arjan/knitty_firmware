@@ -14,7 +14,7 @@ void setup() {
     pinMode(PIN_B, INPUT_PULLUP);
 
     attachInterrupt(digitalPinToInterrupt(PIN_A), interruptA, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(PIN_B), interruptB, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(PIN_B), interruptCalibrate, CHANGE);
 }
 
 void loop() {
@@ -61,36 +61,44 @@ void interruptA() {
 
 //    pinB = digitalRead(PIN_B);
 
-    if (direction == RTL) {
-        int needle = currentCursorPosition / 2;
+    digitalWrite(PIN_NEEDLE_RTL, 1);
+    digitalWrite(PIN_NEEDLE_LTR, 1);
 
-        digitalWrite(PIN_NEEDLE_RTL, 1);
-        digitalWrite(PIN_NEEDLE_LTR, 1);
-//        return;
-
-        if (pinB == LOW) return;
-
-        if (needle >= 30 && needle <= 50) {
-            digitalWrite(PIN_NEEDLE_LTR, (needle / 3) % 2);
-        }
-    } else {
-        int needle = (currentCursorPosition + 25) / 2;
-
-        digitalWrite(PIN_NEEDLE_RTL, 1);
-        digitalWrite(PIN_NEEDLE_LTR, 1);
-
-        if (pinB == HIGH) return;
-
-        if (needle >= 30 && needle <= 50) {
-            digitalWrite(PIN_NEEDLE_RTL, (needle / 3) % 2);
+    if (pinB == HIGH) {
+        if (direction == RTL) {
+            int needle = currentCursorPosition / 2;
+            if (needle >= 40 && needle <= 80) {
+                digitalWrite(PIN_NEEDLE_LTR, (needle / 5) % 2);
+            }
+        } else {
+            int needle = (currentCursorPosition + 25) / 2;
+            if (needle >= 40 && needle <= 80) {
+                digitalWrite(PIN_NEEDLE_RTL, (needle / 5) % 2);
+            }
         }
     }
 }
 
-void interruptB() {
-}
-
 ///
+/// interrupt
+char clastCSENSE = 0;
+char clastCREF = 0;
+
+void interruptCalibrate() {
+    unsigned long now = micros();
+
+    char CSENSE = digitalRead(PIN_A);
+    char CREF = digitalRead(PIN_B);
+
+    if (CSENSE == clastCSENSE && CREF == clastCREF) {
+        return;
+    }
+
+    clastCREF = CREF;
+    clastCSENSE = CSENSE;
+
+    autoCalibrate(CSENSE, CREF);
+}
 
 int passapCalibrateArray[8] = {0};
 signed int  passapCalibratePointer = 0;
@@ -100,12 +108,6 @@ void autoCalibrate(char CSENSE, char CREF) {
     //AutoCalibrate
     passapCalibrateArray[passapCalibratePointer & 0x07] = CSENSE;
     passapCalibrateArray[(passapCalibratePointer + 1) & 0x07] = CREF;
-
-    Serial.print(String(CSENSE!=0));
-    Serial.print(" ");
-    Serial.print(String(CREF!=0));
-    Serial.println(" ");
-
 
     // finding the calibration sequence -> store in 'passaptestpattern'
     int found = 1;
