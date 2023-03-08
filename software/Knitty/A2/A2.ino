@@ -171,7 +171,7 @@ void interruptA() {
                 digitalWrite(PIN_NEEDLE_LTR, knitPattern[index]);
             }
             if (needle == firstNeedle + patternLength) {
-                Serial.println("E:1");
+                Serial.print("E:1\n");
             }
         } else {
             int needle = - 27 + ((currentCursorPosition + 23) / 2);
@@ -180,7 +180,7 @@ void interruptA() {
                 digitalWrite(PIN_NEEDLE_RTL, knitPattern[index]);
             }
             if (needle == firstNeedle) {
-                Serial.println("E:1");
+                Serial.print("E:1\n");
             }
         }
     }
@@ -238,7 +238,7 @@ void autoCalibrate(char CSENSE, char CREF) {
     // Serial.println("end");
     if (found) {
         currentCursorPosition = 0;
-        Serial.println("R:fc");
+        Serial.print("R:fc\n");
     }
 
     passapCalibratePointer = passapCalibratePointer + 2;
