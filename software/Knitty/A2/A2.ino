@@ -160,11 +160,11 @@ void interruptA() {
 
 //    pinB = digitalRead(PIN_B);
 
-    digitalWrite(PIN_NEEDLE_RTL, 1);
-    digitalWrite(PIN_NEEDLE_LTR, 1);
-
     if (pinB == HIGH) {
+
         if (direction == RTL) {
+            digitalWrite(PIN_NEEDLE_RTL, 1);
+
             int needle = - 27 + (currentCursorPosition / 2);
             if (needle >= firstNeedle && needle < (firstNeedle + patternLength)) {
                 unsigned int index = patternLength - (needle - firstNeedle) - 1;
@@ -174,6 +174,8 @@ void interruptA() {
                 Serial.print("E:1\n");
             }
         } else {
+            digitalWrite(PIN_NEEDLE_LTR, 1);
+
             int needle = - 27 + ((currentCursorPosition + 23) / 2);
             if (needle >= firstNeedle && needle < (firstNeedle + patternLength)) {
                 unsigned int index = patternLength - (needle - firstNeedle) - 1;
